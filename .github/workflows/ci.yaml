@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: melkam_psychotherapy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Setup Prisma
+        run: npx prisma generate
+      - name: Migrate DB
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/melkam_psychotherapy
+        run: npx prisma migrate deploy
+      - name: Run Tests
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/melkam_psychotherapy
+          # Add other env vars
+        run: npm test

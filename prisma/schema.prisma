@@ -1,0 +1,131 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  THERAPIST
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id                      String    @id @default(uuid())
+  email                   String    @unique
+  password                String
+  firstName               String
+  lastName                String
+  role                    Role      @default(PATIENT)
+  isEmailVerified         Boolean   @default(false)
+  emailVerificationToken  String?
+  emailVerificationExpiry DateTime?
+  passwordResetToken      String?
+  passwordResetExpiry     DateTime?
+  refreshToken            String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Relations
+  patientProfile   PatientProfile?
+  therapistProfile TherapistProfile?
+  appointments     Appointment[]
+  payments         Payment[]
+
+  @@map("users")
+}
+
+model PatientProfile {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber      String?
+  dateOfBirth      DateTime?
+  address          String?
+  emergencyContact String?
+  medicalHistory   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("patient_profiles")
+}
+
+model TherapistProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber  String   @unique
+  specialization String[]
+  bio            String?
+  experience     Int?
+  hourlyRate     Float?
+  availability   Json? // Store available time slots
+  isVerified     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@map("therapist_profiles")
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  patientId   String
+  patient     User              @relation(fields: [patientId], references: [id])
+  therapistId String
+  therapist   TherapistProfile  @relation(fields: [therapistId], references: [id])
+  scheduledAt DateTime
+  duration    Int               @default(60) // minutes
+  meetLink    String?
+  status      AppointmentStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  payment Payment?
+
+  @@map("appointments")
+}
+
+model Payment {
+  id             String      @id @default(uuid())
+  appointmentId  String      @unique
+  appointment    Appointment @relation(fields: [appointmentId], references: [id])
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  amount         Float
+  currency       String      @default("ETB")
+  chapaReference String?
+  status         String      @default("PENDING") // PENDING, COMPLETED, FAILED
+  paidAt         DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@map("payments")
+}
+
+model MentalHealthResource {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  content     String
+  category    String
+  tags        String[]
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("mental_health_resources")
+}
