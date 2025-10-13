@@ -22,10 +22,17 @@ app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+// Configure rate limiter with safe defaults. Some CI environments may not provide
+// RATE_LIMIT_* env vars, which would make Number(...) return NaN and crash.
+const rlWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS);
+const rlMax = Number(process.env.RATE_LIMIT_MAX_REQUESTS);
 app.use(
   rateLimit({
-    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS),
-    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS),
+    windowMs:
+      Number.isFinite(rlWindowMs) && rlWindowMs > 0
+        ? rlWindowMs
+        : 15 * 60 * 1000, // default 15 minutes
+    max: Number.isFinite(rlMax) && rlMax > 0 ? rlMax : 100,
   })
 );
 
