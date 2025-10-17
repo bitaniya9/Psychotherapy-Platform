@@ -1,7 +1,7 @@
 {
   "name": "melkam-psychotherapy",
   "version": "1.0.0",
-  "description": "",
+  "description": "**Postgres useful commands**",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
@@ -26,7 +26,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.9",
-    "prisma": "^6.17.0",
+    "prisma": "^6.17.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.1.12",
@@ -72,5 +72,16 @@
       "@infrastructure/(.*)": "<rootDir>/src/infrastructure/$1",
       "@presentation/(.*)": "<rootDir>/src/presentation/$1"
     }
-  }
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitaniya9/Psychotherapy-Platform.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bitaniya9/Psychotherapy-Platform/issues"
+  },
+  "homepage": "https://github.com/bitaniya9/Psychotherapy-Platform#readme"
 }
