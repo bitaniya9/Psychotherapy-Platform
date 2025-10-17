@@ -155,7 +155,7 @@ export class AuthController {
    *           schema:
    *             type: object
    *             properties:
-   *               token: { type: string }
+   *               otp: { type: string }
    *     responses:
    *       200:
    *         description: Email verified
