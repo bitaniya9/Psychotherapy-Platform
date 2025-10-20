@@ -1,5 +1,5 @@
-import { RefreshTokenUseCase } from "@application/use-cases/auth/RefreshTokenUseCase";
-import { Role } from "@prisma/client";
+import { RefreshTokenUseCase } from "../../../src/application/use-cases/auth/RefreshTokenUseCase";
+type Role = "PATIENT" | "THERAPIST" | "ADMIN";
 
 // Mock dependencies
 const mockUserRepo = {
@@ -23,12 +23,12 @@ describe("RefreshTokenUseCase", () => {
   });
 
   it("should refresh tokens successfully", async () => {
-    const payload = { id: "1", email: "test@example.com", role: Role.PATIENT };
+  const payload = { id: "1", email: "test@example.com", role: "PATIENT" as Role };
     mockTokenGenerator.verifyRefreshToken.mockReturnValue(payload);
     const mockUser = {
       id: "1",
       email: "test@example.com",
-      role: Role.PATIENT,
+      role: "PATIENT" as Role,
       refreshToken: "oldRefreshToken",
       setRefreshToken: jest.fn(),
     };
@@ -43,9 +43,9 @@ describe("RefreshTokenUseCase", () => {
     );
     expect(mockUserRepo.findById).toHaveBeenCalledWith("1");
     expect(mockTokenGenerator.generateAccessToken).toHaveBeenCalledWith({
-      id: "1",
-      email: "test@example.com",
-      role: Role.PATIENT,
+  id: "1",
+  email: "test@example.com",
+  role: "PATIENT" as Role,
     });
     expect(mockTokenGenerator.generateRefreshToken).toHaveBeenCalledWith({
       id: "1",

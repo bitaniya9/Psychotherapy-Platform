@@ -1,12 +1,24 @@
 import { Request, Response } from "express";
 import { createAppointmentSchema, listAppointmentsSchema, updateAppointmentSchema } from "../validators/appointmentValidators";
 import { PrismaAppointmentRepository } from "../../infrastructure/database/AppointmentRepository";
+import { InMemoryAppointmentRepository } from "../../infrastructure/database/InMemoryAppointmentRepository";
 import { MeetScheduler } from "../../infrastructure/meet/MeetScheduler";
 import { Appointment } from "../../domain/entities/Appointment";
 import { AuthRequest } from "../middlewares/authenticate";
 
-const repo = new PrismaAppointmentRepository();
-const scheduler = new MeetScheduler();
+// Lazy singletons so env is checked at runtime (dotenv is loaded in index.ts before route handlers run)
+let prismaRepo: PrismaAppointmentRepository | null = null;
+let inMemoryRepo: InMemoryAppointmentRepository | null = null;
+
+function getRepo() {
+  return process.env.APPOINTMENTS_USE_INMEMORY === "true"
+    ? (inMemoryRepo ??= new InMemoryAppointmentRepository())
+    : (prismaRepo ??= new PrismaAppointmentRepository());
+}
+
+function getSchedulerForRepo(repo: any) {
+  return new MeetScheduler(repo);
+}
 
 export class AppointmentsController {
   static async create(req: AuthRequest, res: Response) {
@@ -23,9 +35,11 @@ export class AppointmentsController {
       duration,
       notes: parsed.reason,
     };
-    const ap = await repo.create(dto as any);
-    // schedule meet creation job
-    scheduler.scheduleMeetCreation(ap.id);
+  const repo = getRepo();
+  const ap = await repo.create(dto as any);
+  // schedule meet creation job
+  const scheduler = getSchedulerForRepo(repo as any);
+  scheduler.scheduleMeetCreation(ap.id);
     res.status(201).json({ success: true, data: ap.toJSON(), message: "Appointment created" });
   }
 
@@ -35,20 +49,23 @@ export class AppointmentsController {
     const size = Number(parsed.size || 10);
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, message: "Authentication required" });
-    const result = await repo.listByUser(userId, page, size);
+  const repo = getRepo();
+  const result = await repo.listByUser(userId, page, size);
     res.json({ success: true, data: result, message: "Appointments fetched" });
   }
 
   static async getById(req: AuthRequest, res: Response) {
     const id = req.params.id;
-    const ap = await repo.findById(id);
+  const repo = getRepo();
+  const ap = await repo.findById(id);
     if (!ap) return res.status(404).json({ success: false, message: "Appointment not found" });
     res.json({ success: true, data: ap.toJSON(), message: "Appointment fetched" });
   }
 
   static async update(req: AuthRequest, res: Response) {
     const id = req.params.id;
-    const ap = await repo.findById(id);
+  const repo = getRepo();
+  const ap = await repo.findById(id);
     if (!ap) return res.status(404).json({ success: false, message: "Appointment not found" });
     const parsed = updateAppointmentSchema.parse(req.body);
     if (parsed.startsAt || parsed.endsAt) {
@@ -59,13 +76,14 @@ export class AppointmentsController {
     }
     if (parsed.status) ap.changeStatus(parsed.status as any);
     if (parsed.reason) ap.toJSON().notes = parsed.reason; // quick set; repo update will persist
-    const updated = await repo.update(ap);
+  const updated = await repo.update(ap);
     res.json({ success: true, data: updated.toJSON(), message: "Appointment updated" });
   }
 
   static async remove(req: AuthRequest, res: Response) {
     const id = req.params.id;
-    const ap = await repo.findById(id);
+  const repo = getRepo();
+  const ap = await repo.findById(id);
     if (!ap) return res.status(404).json({ success: false, message: "Appointment not found" });
     // soft delete via status
     ap.changeStatus(("CANCELLED" as any));

@@ -1,5 +1,5 @@
-import { RegisterUseCase } from "@application/use-cases/auth/RegisterUseCase";
-import { Role } from "@prisma/client";
+import { RegisterUseCase } from "../../../src/application/use-cases/auth/RegisterUseCase";
+type Role = "PATIENT" | "THERAPIST" | "ADMIN";
 
 // Mock dependencies
 const mockUserRepo = {
@@ -43,7 +43,7 @@ describe("RegisterUseCase", () => {
       email: "test@example.com",
       firstName: "John",
       lastName: "Doe",
-      role: Role.PATIENT,
+  role: "PATIENT" as Role,
       toJSON: jest.fn().mockReturnValue({ id: "1", email: "test@example.com" }),
       setEmailVerificationToken: jest.fn(),
       setRefreshToken: jest.fn(),
@@ -57,7 +57,7 @@ describe("RegisterUseCase", () => {
       password: "password",
       firstName: "John",
       lastName: "Doe",
-      role: Role.PATIENT,
+  role: "PATIENT" as Role,
     });
 
     expect(mockUserRepo.findByEmail).toHaveBeenCalledWith("test@example.com");
@@ -77,7 +77,7 @@ describe("RegisterUseCase", () => {
         password: "password",
         firstName: "John",
         lastName: "Doe",
-        role: Role.PATIENT,
+        role: "PATIENT" as Role,
       })
     ).rejects.toThrow("User with this email already exists");
   });

@@ -1,7 +1,15 @@
 import { z } from "zod";
 
+function therapistIdValidator(val: string) {
+  // Check env at validation time so dotenv ordering doesn't matter
+  const allowLoose = process.env.APPOINTMENTS_USE_INMEMORY === "true";
+  if (allowLoose) return typeof val === "string" && val.length > 0;
+  // otherwise ensure it's a UUID
+  return z.string().uuid().safeParse(val).success;
+}
+
 export const createAppointmentSchema = z.object({
-  therapistId: z.string().uuid(),
+  therapistId: z.string().refine(therapistIdValidator, { message: "Invalid therapistId" }),
   startsAt: z.string().refine((s) => !Number.isNaN(Date.parse(s)), { message: "Invalid date" }),
   endsAt: z.string().refine((s) => !Number.isNaN(Date.parse(s)), { message: "Invalid date" }),
   reason: z.string().optional(),
