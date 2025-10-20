@@ -149,6 +149,28 @@ export class PrismaUserRepository implements IUserRepository {
     }
   }
 
+  async updateFieldsForExpiredTokens(currentDate:Date):Promise<void>{
+    try{
+      await prisma.user.updateMany({
+        where:{
+          emailVerificationExpiry:{lt:currentDate},
+          isEmailVerified:false,
+        },
+        data:{
+          emailVerificationToken:null,
+          emailVerificationExpiry:null,
+        },
+
+      });
+    }catch(e:any){
+      throw new AppError(
+        `Database error when cleaning expired OTPs: ${e.message || e}`,
+        "PRISMA_ERROR",
+        500
+      );
+    }
+  }
+
   async list(page = 1, size = 10) {
     try {
       const skip = (page - 1) * size;

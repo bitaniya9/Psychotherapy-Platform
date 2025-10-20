@@ -40,5 +40,6 @@ export interface IUserRepository {
     }>
   ): Promise<User>;
   delete(id: string): Promise<void>;
+  updateFieldsForExpiredTokens(currentDate:Date):Promise<void>
   list(page: number, size: number): Promise<PaginatedUsers>;
 }

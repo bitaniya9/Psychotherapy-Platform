@@ -10,6 +10,7 @@ import userRoutes from "./presentation/routes/userRoutes";
 import { setupSwagger } from "./presentation/swagger";
 import { z as zod } from "zod";
 import { setupZodValidationError } from "./presentation/validation/zodAdapter";
+import {startOTPCleanup} from "./infrastructure/scheduler/TokenCleanup"
 
 dotenv.config();
 
@@ -40,6 +41,8 @@ setupSwagger(app);
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
+
+startOTPCleanup();
 
 app.use(errorHandler); // Must be last
 
