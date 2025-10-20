@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import { errorHandler } from "./presentation/middlewares/errorHandler";
 import authRoutes from "./presentation/routes/authRoutes";
 import userRoutes from "./presentation/routes/userRoutes";
+import appointmentRoutes from "./presentation/routes/appointmentRoutes";
 import { setupSwagger } from "./presentation/swagger";
 import { z as zod } from "zod";
 import { setupZodValidationError } from "./presentation/validation/zodAdapter";
@@ -40,6 +41,7 @@ setupSwagger(app);
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/appointments", appointmentRoutes);
 
 app.use(errorHandler); // Must be last
 
