@@ -3,7 +3,7 @@ import { PrismaUserRepository } from "../database/UserRepository";
 import { CleanExpiredOTPUseCase } from "../../application/use-cases/auth/CleanExpiredOTPUseCase";
 
 export function startOTPCleanup(){
-    const scheduler=new NodeCronScheduler;
+    const scheduler=new NodeCronScheduler();
     const userRepository=new PrismaUserRepository();
     const useCase=new CleanExpiredOTPUseCase(userRepository);
 
