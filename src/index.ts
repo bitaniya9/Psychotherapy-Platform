@@ -10,6 +10,10 @@ import userRoutes from "./presentation/routes/userRoutes";
 import { setupSwagger } from "./presentation/swagger";
 import { z as zod } from "zod";
 import { setupZodValidationError } from "./presentation/validation/zodAdapter";
+import {startOTPCleanup} from "./infrastructure/scheduler/TokenCleanup"
+import { PrismaUserRepository } from "./infrastructure/database/UserRepository";
+import { NodeCronScheduler } from "./infrastructure/scheduler/NodeCronScheduler";
+import { CleanExpiredOTPUseCase } from "./application/use-cases/auth/CleanExpiredOTPUseCase";
 
 dotenv.config();
 
@@ -40,6 +44,12 @@ setupSwagger(app);
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
+
+const scheduler = new NodeCronScheduler();
+const userRepository = new PrismaUserRepository();
+const useCase = new CleanExpiredOTPUseCase(userRepository);
+const otpCleanup = new startOTPCleanup(scheduler, useCase);
+otpCleanup.start();
 
 app.use(errorHandler); // Must be last
 
