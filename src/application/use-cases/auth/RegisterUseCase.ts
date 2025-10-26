@@ -4,7 +4,7 @@ import { IPasswordHasher } from "@application/interfaces/IPasswordHasher";
 import { ITokenGenerator } from "@application/interfaces/ITokenGenerator";
 import { IOTPGenerator } from "@application/interfaces/IOTPGenerator";
 import { IEmailService } from "@application/interfaces/IEmailService";
-import { Role } from "@prisma/client";
+export type Role = "PATIENT" | "THERAPIST" | "ADMIN";
 
 export interface RegisterDTO {
   email: string;

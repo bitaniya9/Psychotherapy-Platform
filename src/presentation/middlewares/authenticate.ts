@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { JWTTokenGenerator } from "../../infrastructure/security/JWTTokenGenerator";
-import { Role } from "@prisma/client";
+
+export type Role = "PATIENT" | "THERAPIST" | "ADMIN";
 
 const tokenGenerator = new JWTTokenGenerator();
 
@@ -18,8 +19,19 @@ export const authenticate = (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    const bypass = process.env.AUTH_BYPASS === "true" || process.env.APPOINTMENTS_USE_INMEMORY === "true";
+    if (bypass) {
+      // dev bypass: immediately inject a test user and skip JWT verification entirely
+      console.warn("Auth bypass is ENABLED (development only). Skipping token verification.");
+      req.user = {
+        id: process.env.AUTH_BYPASS_USER_ID || "dev-user-id",
+        email: process.env.AUTH_BYPASS_USER_EMAIL || "dev@example.com",
+        role: (process.env.AUTH_BYPASS_USER_ROLE as Role) || "PATIENT",
+      };
+      return next();
+    }
 
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,

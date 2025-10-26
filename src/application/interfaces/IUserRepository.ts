@@ -1,5 +1,6 @@
 import { User } from "@domain/entities/User";
-import { Role } from "@prisma/client";
+
+export type Role = "PATIENT" | "THERAPIST" | "ADMIN";
 
 export interface CreateUserDTO {
   email: string;

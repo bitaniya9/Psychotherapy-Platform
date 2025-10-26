@@ -5,7 +5,6 @@ import {
   authorize,
   AuthRequest,
 } from "../middlewares/authenticate";
-import { Role } from "@prisma/client";
 
 const router = express.Router();
 
