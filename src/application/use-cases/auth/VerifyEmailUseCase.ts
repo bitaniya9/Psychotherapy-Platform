@@ -10,11 +10,22 @@ export class VerifyEmailUseCase {
     private userRepository: IUserRepository,
     private emailService: IEmailService
   ) {}
+  /**
+   * Verify a user's email using their email and the OTP sent to them.
+   * Requiring email + otp avoids ambiguous OTP collisions and follows explicit verification.
+   */
+  async execute(email: string, otp: string): Promise<void> {
+    if (!email || !otp) {
+      throw new ValidationError("Email and OTP are required");
+    }
 
-  async execute(token: string): Promise<void> {
-    // token here is actually an OTP
-    const user = await this.userRepository.findByEmailVerificationToken(token);
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    // OTP must match the one stored for the user
+    if (!user.emailVerificationToken || user.emailVerificationToken !== otp) {
       throw new NotFoundError("Invalid verification code");
     }
 

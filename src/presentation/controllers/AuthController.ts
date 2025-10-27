@@ -30,37 +30,23 @@ import {
 import { AuthRequest } from "../middlewares/authenticate";
 
 // Dependency Injection (manual for simplicity)
-import { PrismaUserRepository } from "../../infrastructure/database/UserRepository";
-import { BcryptPasswordHasher } from "../../infrastructure/security/BcryptPasswordHasher";
-import { JWTTokenGenerator } from "../../infrastructure/security/JWTTokenGenerator";
-import { SimpleOTPGenerator } from "../../infrastructure/security/SimpleOTPGenerator";
-import { NodemailerEmailService } from "../../infrastructure/email/NodemailerEmailService";
+import { IUserRepository } from "../../application/interfaces/IUserRepository";
 
-const userRepo = new PrismaUserRepository();
-const passwordHasher = new BcryptPasswordHasher();
-const tokenGenerator = new JWTTokenGenerator();
-const otpGenerator = new SimpleOTPGenerator();
-const emailService = new NodemailerEmailService();
-
-const registerUseCase = new RegisterUseCase(
-  userRepo,
-  passwordHasher,
-  tokenGenerator,
-  otpGenerator,
-  emailService
-);
-const loginUseCase = new LoginUseCase(userRepo, passwordHasher, tokenGenerator);
-const verifyEmailUseCase = new VerifyEmailUseCase(userRepo, emailService);
-const forgotPasswordUseCase = new ForgotPasswordUseCase(
-  userRepo,
-  otpGenerator,
-  emailService
-);
-const resetPasswordUseCase = new ResetPasswordUseCase(userRepo, passwordHasher);
-const refreshTokenUseCase = new RefreshTokenUseCase(userRepo, tokenGenerator);
-const logoutUseCase = new LogoutUseCase(userRepo);
+// Controller no longer constructs infrastructure directly. Dependencies are injected
+// from the route wiring (keeps controller aligned with clean architecture).
 
 export class AuthController {
+  constructor(
+    private registerUseCase: RegisterUseCase,
+    private loginUseCase: LoginUseCase,
+    private verifyEmailUseCase: VerifyEmailUseCase,
+    private forgotPasswordUseCase: ForgotPasswordUseCase,
+    private resetPasswordUseCase: ResetPasswordUseCase,
+    private refreshTokenUseCase: RefreshTokenUseCase,
+    private logoutUseCase: LogoutUseCase,
+    // optional user repository for user management endpoints
+    private userRepository?: IUserRepository
+  ) {}
   /**
    * @swagger
    * /auth/register:
@@ -91,9 +77,9 @@ export class AuthController {
    *                 data: { type: object }
    *                 message: { type: string }
    */
-  static async register(req: Request, res: Response) {
+  async register(req: Request, res: Response) {
     const dto = registerSchema.parse(req.body) as RegisterDTO;
-    const result = await registerUseCase.execute(dto);
+    const result = await this.registerUseCase.execute(dto);
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === "true",
@@ -126,9 +112,9 @@ export class AuthController {
    *       200:
    *         description: Login successful
    */
-  static async login(req: Request, res: Response) {
+  async login(req: Request, res: Response) {
     const dto = loginSchema.parse(req.body) as LoginDTO;
-    const result = await loginUseCase.execute(dto);
+    const result = await this.loginUseCase.execute(dto);
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === "true",
@@ -155,14 +141,17 @@ export class AuthController {
    *           schema:
    *             type: object
    *             properties:
+   *               email: { type: string }
    *               otp: { type: string }
    *     responses:
    *       200:
    *         description: Email verified
    */
-  static async verifyEmail(req: Request, res: Response) {
-    const { otp } = verifyEmailSchema.parse(req.body);
-    await verifyEmailUseCase.execute(otp);
+  async verifyEmail(req: Request, res: Response) {
+    // Now require both email + otp to avoid OTP collisions and be explicit
+    const parsed = verifyEmailSchema.parse(req.body) as any;
+    const { email, otp } = parsed;
+    await this.verifyEmailUseCase.execute(email, otp);
     res.json({
       success: true,
       data: null,
@@ -188,9 +177,9 @@ export class AuthController {
    *       200:
    *         description: Reset email sent
    */
-  static async forgotPassword(req: Request, res: Response) {
+  async forgotPassword(req: Request, res: Response) {
     const { email } = forgotPasswordSchema.parse(req.body);
-    await forgotPasswordUseCase.execute(email);
+    await this.forgotPasswordUseCase.execute(email);
     res.json({
       success: true,
       data: null,
@@ -217,13 +206,13 @@ export class AuthController {
    *       200:
    *         description: Password reset successful
    */
-  static async resetPassword(req: Request, res: Response) {
+  async resetPassword(req: Request, res: Response) {
     const parsed = resetPasswordSchema.parse(req.body) as any;
     const dto: ResetPasswordDTO = {
       token: parsed.otp,
       newPassword: parsed.newPassword,
     };
-    await resetPasswordUseCase.execute(dto);
+    await this.resetPasswordUseCase.execute(dto);
     res.json({
       success: true,
       data: null,
@@ -241,12 +230,12 @@ export class AuthController {
    *       200:
    *         description: Tokens refreshed
    */
-  static async refreshToken(req: Request, res: Response) {
+  async refreshToken(req: Request, res: Response) {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       throw new UnauthorizedError("Refresh token required");
     }
-    const result = await refreshTokenUseCase.execute(refreshToken);
+    const result = await this.refreshTokenUseCase.execute(refreshToken);
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === "true",
@@ -272,9 +261,9 @@ export class AuthController {
    *       200:
    *         description: Logout successful
    */
-  static async logout(req: AuthRequest, res: Response) {
+  async logout(req: AuthRequest, res: Response) {
     if (!req.user) throw new UnauthorizedError("Authentication required");
-    await logoutUseCase.execute(req.user.id);
+    await this.logoutUseCase.execute(req.user.id);
     res.clearCookie("refreshToken");
     res.json({
       success: true,
@@ -305,15 +294,15 @@ export class AuthController {
    *       200:
    *         description: A paginated list of users
    */
-  static async listUsers(req: Request, res: Response) {
+  async listUsers(req: Request, res: Response) {
     const page = Number(req.query.page || 1);
     const size = Number(req.query.size || 10);
-    const repo = userRepo as any;
+    const repo = this.userRepository as any;
     const result = await repo.list(page, size);
     res.json({ success: true, data: result, message: "Users fetched" });
   }
 
-  static async getUserById(req: Request, res: Response) {
+  async getUserById(req: Request, res: Response) {
     /**
      * @swagger
      * /users/{id}:
@@ -333,7 +322,7 @@ export class AuthController {
      *         description: User not found
      */
     const id = req.params.id;
-    const repo = userRepo as any;
+    const repo = this.userRepository as any;
     const user = await repo.findById(id);
     if (!user)
       return res
@@ -342,7 +331,7 @@ export class AuthController {
     res.json({ success: true, data: user.toJSON(), message: "User fetched" });
   }
 
-  static async patchUser(req: Request, res: Response) {
+  async patchUser(req: Request, res: Response) {
     /**
      * @swagger
      * /users/{id}:
@@ -368,7 +357,7 @@ export class AuthController {
      */
     const id = req.params.id;
     const dto = userUpdateSchema.parse(req.body);
-    const repo = userRepo as any;
+    const repo = this.userRepository as any;
     const updated = await repo.updateFields(id, dto);
     res.json({
       success: true,
@@ -377,7 +366,7 @@ export class AuthController {
     });
   }
 
-  static async replaceUser(req: Request, res: Response) {
+  async replaceUser(req: Request, res: Response) {
     /**
      * @swagger
      * /users/{id}:
@@ -403,7 +392,7 @@ export class AuthController {
      */
     const id = req.params.id;
     const dto = userReplaceSchema.parse(req.body) as RegisterDTO;
-    const repo = userRepo as any;
+    const repo = this.userRepository as any;
     const existing = await repo.findById(id);
     if (!existing)
       return res
@@ -420,7 +409,7 @@ export class AuthController {
     res.json({ success: true, data: saved.toJSON(), message: "User replaced" });
   }
 
-  static async deleteUser(req: Request, res: Response) {
+  async deleteUser(req: Request, res: Response) {
     /**
      * @swagger
      * /users/{id}:
@@ -440,7 +429,7 @@ export class AuthController {
      *         description: User not found
      */
     const id = req.params.id;
-    const repo = userRepo as any;
+    const repo = this.userRepository as any;
     await repo.delete(id);
     res.json({ success: true, data: null, message: "User deleted" });
   }
