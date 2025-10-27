@@ -5,3 +5,5 @@ node_modules
 /src/generated/prisma
 migrations
 docker-compose.yaml
+.vscode
+logs
