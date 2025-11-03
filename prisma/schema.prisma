@@ -72,6 +72,8 @@ model TherapistProfile {
   hourlyRate     Float?
   availability   Json? // Store available time slots
   isVerified     Boolean  @default(false)
+  profileImgUrl  String? 
+  profileImgPublicId String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
