@@ -1,6 +1,8 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import express from "express";
+import { TherapistProfile } from "@domain/entities/TherapistProfile";
+import { nullable, property } from "zod";
 
 const options = {
   definition: {
@@ -46,6 +48,42 @@ const options = {
             updatedAt: { type: "string", format: "date-time" },
           },
         },
+        TherapistProfile:{
+          type:"object",
+          properties:{
+            id:{type:"string"},
+            userId:{type:"string"},
+            user:{$ref:"#/components/schema/User",},
+            licenseNumber:{type:"string"},
+            specialization:{type:"array",items:{type:"string"}},
+            bio:{type:"string",nullable:true},
+            experience:{type:"number", nullable:true},
+            hourlyRate:{type:"number", nullable:true},
+            availability:{
+              type:"array",
+              nullable:true,
+              items:{
+                type:"object",
+                properties:{
+                  day:{type:"string"},
+                  start:{type:"string"},
+                  end:{type:"string"}
+                }
+              }
+
+            },
+            isVerified:{type:"boolean"},
+            profileImgUrl:{type:"string",nullable:true},
+            profileImgPublicId:{type:"string",nullable:true},
+
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+
+            appointments:{type:"array", items:{$ref:"#/components/schemas/Appointment"}}
+
+
+          }
+        }
       },
     },
   },

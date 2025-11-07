@@ -15,6 +15,9 @@ import { PrismaUserRepository } from "./infrastructure/database/UserRepository";
 import { NodeCronScheduler } from "./infrastructure/scheduler/NodeCronScheduler";
 import { CleanExpiredOTPUseCase } from "./application/use-cases/auth/CleanExpiredOTPUseCase";
 
+import TherapistProfileRoutes from "./presentation/routes/TherapistProfileRoutes"
+
+
 dotenv.config();
 
 // Optionally configure zod to use the zod-validation-error error map for friendlier messages
@@ -44,6 +47,7 @@ setupSwagger(app);
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/TherapistProfiles",TherapistProfileRoutes);
 
 const scheduler = new NodeCronScheduler();
 const userRepository = new PrismaUserRepository();
