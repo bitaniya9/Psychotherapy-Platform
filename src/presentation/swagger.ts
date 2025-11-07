@@ -87,9 +87,7 @@ const options = {
       },
     },
   },
-  apis: ["./src/presentation/controllers/*.ts",
-    "./src/presentation/routes/*.ts"
-  ], // Scan for JSDoc comments
+  apis: ["./src/presentation/controllers/*.ts"], // Scan for JSDoc comments
 };
 
 const specs = swaggerJsdoc(options);

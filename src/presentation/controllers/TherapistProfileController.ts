@@ -2,11 +2,13 @@ import { Request, Response } from "express";
 import fs from "fs";
 import { UploadTherapistProfileUseCase } from "../../application/use-cases/auth/TherapistProfileUseCases/UpdateProfileImgUseCase"
 import { GetTherapistProfileByUserIdUseCase } from "../../application/use-cases/auth/TherapistProfileUseCases/GetTherapistProfileUseCase";
+import { DeleteTherapistProfileUseCase } from "@application/use-cases/auth/TherapistProfileUseCases/DeleteTherapistProfileImgUseCase";
 
 export class TherapistProfileController {
   constructor(
-    private uploadTherapistProfileUseCase: UploadTherapistProfileUseCase,
     private getTherapistProfileByUserIdUseCase: GetTherapistProfileByUserIdUseCase,
+    private uploadTherapistProfileUseCase: UploadTherapistProfileUseCase,
+    private deleteTherapistProfileUseCase: DeleteTherapistProfileUseCase
   ) {}
 
   /**
@@ -111,4 +113,62 @@ export class TherapistProfileController {
       return res.status(500).json({ success: false, message: error.message });
     }
   }
+  
+  /**
+ * @swagger
+ * /therapistProfile/deleteProfile:
+ *   delete:
+ *     summary: Delete a therapist profile
+ *     tags:
+ *       - Therapist Profile
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Therapist profile ID
+ *       - in: query
+ *         name: publicId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Public ID of the profile image
+ *     responses:
+ *       200:
+ *         description: Profile deleted successfully
+ *       400:
+ *         description: No image to delete
+ *       500:
+ *         description: Internal server error
+ */
+
+
+  async deleteTherapistProfile(req:Request,res:Response):Promise<Response>{
+    try{
+      const {id}=req.params;
+      const {publicId}=req.query;
+      if(!publicId){
+        return res.status(400).json({error:"No image with the following id detected"})
+      }
+
+      const result=await this.deleteTherapistProfileUseCase.execute({
+        id,
+        publicId:String(publicId),
+      });
+
+      return res.status(200).json({
+        message:"Profile image deleted successfuly",
+        data:result,
+      })
+      
+    }catch(error:any){
+      console.error(error);
+      return res.status(500).json({error:error.message});
+
+    }
+
+  }
+
+
 }

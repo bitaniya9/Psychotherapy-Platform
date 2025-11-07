@@ -5,6 +5,7 @@ import { UploadTherapistProfileUseCase } from "../../application/use-cases/auth/
 import { GetTherapistProfileByUserIdUseCase } from "../../application/use-cases/auth/TherapistProfileUseCases/GetTherapistProfileUseCase"
 import { CloudinaryService } from "../../infrastructure/Cloudinary/cloudinary"
 import { PrismaTherapistProfileRepository } from "../../infrastructure/database/TherapistProfileRepo"
+import { DeleteTherapistProfileUseCase } from "../../application/use-cases/auth/TherapistProfileUseCases/DeleteTherapistProfileImgUseCase";
 const router = express.Router();
 
 // Multer setup for file uploads
@@ -21,14 +22,15 @@ const upload = multer({ storage });
 // dependencies (use cases)
 const cloudinaryService = new CloudinaryService();
 const therapistProfileRepo = new PrismaTherapistProfileRepository();
-const uploadUseCase = new UploadTherapistProfileUseCase(cloudinaryService, therapistProfileRepo);
+const uploadTherapistProfile = new UploadTherapistProfileUseCase(cloudinaryService, therapistProfileRepo);
 const getProfileUseCase = new GetTherapistProfileByUserIdUseCase(therapistProfileRepo);
+const deleteTherapistProfile=new DeleteTherapistProfileUseCase(therapistProfileRepo,cloudinaryService);
 
 //controller
-const controller = new TherapistProfileController(uploadUseCase, getProfileUseCase);
-
+const controller = new TherapistProfileController(getProfileUseCase,uploadTherapistProfile,deleteTherapistProfile);
 // Routes
 router.post("/upload", upload.single("file"), (req, res) => controller.uploadProfileImage(req, res));
 router.get("/:userId", (req, res) => controller.getTherapistProfile(req, res));
+router.delete("/therapistProfile/:id",(req,res)=>controller.deleteTherapistProfile(req,res))
 
 export default router;
